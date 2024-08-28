@@ -22,9 +22,9 @@ body {
 
 .chat-header {
     background-color: #007bff;
-    color: #fff;
+    color: #ffffff;
     font-weight: bold;
-    padding: 15px;
+    padding: 9px;
     text-align: center;
     border-radius: 15px 15px 0 0;
     box-sizing: border-box;
@@ -73,7 +73,7 @@ body {
 
 #sendBtn {
     background-color: #007bff;
-    color: #fff;
+    color: #ffffff;
     border: none;
     border-radius: 10px;
     padding: 10px 20px;
