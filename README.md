@@ -28,7 +28,7 @@ cd Live-Chat-Application
 ```bash
 npm install
 ```
-### 3. Start Server
+### 3. Start the Server
 ```bash
 npm start
 ```
