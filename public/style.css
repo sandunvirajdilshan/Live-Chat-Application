@@ -30,6 +30,12 @@ body {
     box-sizing: border-box;
 }
 
+.nav {
+    display: flex;
+    justify-content: flex-end;
+    background-color: #dbdbdb;
+}
+
 .message {
     padding: 10px;
     margin: 5px 0;
@@ -54,7 +60,7 @@ body {
     border-radius: 0 0 15px 15px;
     display: flex;
     padding: 10px;
-    background-color: #f9f9f9;
+    background-color: #dbdbdb;
 }
 
 #messageInput {
@@ -71,20 +77,33 @@ body {
     border-color: #007bff;
 }
 
-#sendBtn {
-    background-color: #007bff;
+#sendBtn, #logoutBtn {
     color: #ffffff;
     border: none;
     border-radius: 10px;
     padding: 10px 20px;
-    margin-left: 10px;
     cursor: pointer;
     font-size: 16px;
+    font-weight:bold;
     transition: background-color 0.2s;
 }
 
-#sendBtn:hover {
+#sendBtn {
+    background-color: #007bff;
+    margin-left: 10px;
+}
+
+#logoutBtn {
+    background-color: #f72e2e;
+    margin: 10px;
+}
+
+#sendBtn:hover{
     background-color: #0056b3;
+}
+
+#logoutBtn:hover {
+    background-color: #d11919;
 }
 
 .form-container {

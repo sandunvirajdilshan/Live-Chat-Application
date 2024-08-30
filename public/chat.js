@@ -40,11 +40,16 @@ ws.onclose = () => {
 
 const logoutBtn = document.getElementById('logoutBtn');
 
-logoutBtn.addEventListener('click', () => {
-    fetch('/api/logout', {
+logoutBtn.addEventListener('click', async () => {
+    const response = await fetch('/api/logout', {
         method: 'POST',
         credentials: 'same-origin'
-    }).then(() => {
-        window.location.href = '/signin';
     });
+
+    if (response.redirected) {
+        window.location.href = response.url;
+    } else {
+        const errorMessage = await response.text();
+        alert(errorMessage);
+    }
 });

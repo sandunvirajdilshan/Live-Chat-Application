@@ -1,6 +1,3 @@
-// Load environment variables from .env file
-require('dotenv').config();
-
 const express = require('express');
 const http = require('http');
 const WebSocket = require('ws');
@@ -9,6 +6,9 @@ const session = require('express-session');
 const path = require('path');
 const bcrypt = require('bcrypt');
 const mysql = require('mysql2/promise');
+
+// Load environment variables from .env file
+require('dotenv').config();
 
 const app = express();
 const server = http.createServer(app);
@@ -111,7 +111,6 @@ app.post('/api/signup', async (req, res) => {
 
         res.redirect('/signin');
     } catch (err) {
-        console.log(err);
         res.status(500).send('Server error');
     }
 });
@@ -122,6 +121,14 @@ app.post('/api/signin', async (req, res) => {
 
     try {
         const connection = await mysql.createConnection(dbConfig);
+
+        const [activeSession] = await connection.query(
+            'SELECT * FROM sessions WHERE email = ? AND expires_at > NOW()', [email]
+        );
+
+        if (activeSession.length > 0) {
+            return res.status(403).send('You are already signed in from another device.');
+        }
 
         const [rows] = await connection.query('SELECT * FROM users WHERE email = ?', [email]);
         if (rows.length === 0) {
@@ -135,6 +142,13 @@ app.post('/api/signin', async (req, res) => {
             return res.status(401).send('Invalid email or password');
         }
 
+        const sessionCookie = req.session.id;
+        const expiresAt = new Date(Date.now() + SESSION_COOKIE_MAX_AGE);
+        await connection.query(
+            'INSERT INTO sessions (email, cookie, expires_at) VALUES (?, ?, ?)',
+            [email, sessionCookie, expiresAt]
+        );
+
         req.session.isLoggedIn = true;
         req.session.username = email;
 
@@ -142,17 +156,27 @@ app.post('/api/signin', async (req, res) => {
 
         res.redirect('/chat');
     } catch (err) {
-        console.log(err);
         res.status(500).send('Server error');
     }
 });
 
 // Handle Logout Process
 app.post('/api/logout', (req, res) => {
-    req.session.destroy((err) => {
+    const email = req.session.username;
+
+    req.session.destroy(async (err) => {
         if (err) {
             return res.status(500).send('Server error');
         }
+
+        try {
+            const connection = await mysql.createConnection(dbConfig);
+            await connection.query('DELETE FROM sessions WHERE email = ?', [email]);
+            connection.end();
+        } catch (err) {
+            return res.status(500).send('Server error');
+        }
+
         res.clearCookie('connect.sid');
         res.redirect('/signin');
     });
@@ -182,8 +206,24 @@ server.listen(PORT, () => {
 });
 
 // Server Shutdown
-process.on('SIGINT', () => {
+process.on('SIGINT', async () => {
     console.log('Shutting down server...');
+
     clients.forEach(client => client.close());
-    wss.close(() => process.exit());
+
+    try {
+        const connection = await mysql.createConnection(dbConfig);
+
+        await connection.query('DELETE FROM sessions');
+
+        connection.end();
+        console.log('All active sessions cleared.');
+    } catch (err) {
+        console.log('Error clearing sessions during shutdown:', err);
+    }
+
+    wss.close(() => {
+        console.log('WebSocket server closed.');
+        process.exit(0);
+    });
 });
