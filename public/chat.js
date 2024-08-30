@@ -37,3 +37,14 @@ ws.onclose = () => {
     messageDiv.classList.add('message', 'system');
     messagesDiv.appendChild(messageDiv);
 };
+
+const logoutBtn = document.getElementById('logoutBtn');
+
+logoutBtn.addEventListener('click', () => {
+    fetch('/api/logout', {
+        method: 'POST',
+        credentials: 'same-origin'
+    }).then(() => {
+        window.location.href = '/signin';
+    });
+});
