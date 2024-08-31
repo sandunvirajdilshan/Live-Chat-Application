@@ -87,7 +87,7 @@ userDetailsBtn.addEventListener('click', async () => {
                 <p>${userDetails.email}</p>
             </div>
         `;
-        userDetailsModal.style.display = 'grid'; // Update this to 'grid' for the new CSS
+        userDetailsModal.style.display = 'grid';
     } else {
         const errorMessage = await response.text();
         alert(errorMessage);
