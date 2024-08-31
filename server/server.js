@@ -93,44 +93,70 @@ app.get('/*.html', (req, res) => {
 
 // Handle Sign-Up Process
 app.post('/api/signup', async (req, res) => {
-    const { firstName, lastName, email, password } = req.body;
+
+    const { firstName, lastName, email, password, confirmPassword } = req.body;
+
+    if (!firstName || !lastName || !email || !password || !confirmPassword) {
+        return res.status(400).send('Fields cannot be empty');
+    }
+
+    if (password !== confirmPassword) {
+        return res.status(400).send('Passwords do not match');
+    }
 
     try {
         const connection = await mysql.createConnection(dbConfig);
 
-        const [rows] = await connection.query('SELECT * FROM users WHERE email = ?', [email]);
+        const [rows] = await connection.query(
+            'SELECT * FROM users WHERE email = ?',
+            [email]
+        );
+
         if (rows.length > 0) {
             return res.status(409).send('Email already registered');
         }
 
         const hashedPassword = await bcrypt.hash(password, SALT_ROUNDS);
 
-        await connection.query('INSERT INTO users (email, first_name, last_name, password_hash) VALUES (?, ?, ?, ?)', [email, firstName, lastName, hashedPassword]);
+        await connection.query(
+            'INSERT INTO users (email, first_name, last_name, password_hash) VALUES (?, ?, ?, ?)',
+            [email, firstName, lastName, hashedPassword]
+        );
 
         connection.end();
 
-        res.redirect('/signin');
+        res.redirect('/signin?message=Account created successfully');
     } catch (err) {
-        res.status(500).send('Server error');
+        return res.status(500).send('Server error');
     }
 });
 
 // Handle Sign-In Process
 app.post('/api/signin', async (req, res) => {
+
     const { email, password } = req.body;
+
+    if (!email || !password) {
+        return res.status(400).send('Fields cannot be empty');
+    }
 
     try {
         const connection = await mysql.createConnection(dbConfig);
 
         const [activeSession] = await connection.query(
-            'SELECT * FROM sessions WHERE email = ? AND expires_at > NOW()', [email]
+            'SELECT * FROM sessions WHERE email = ? AND expires_at > NOW()',
+            [email]
         );
 
         if (activeSession.length > 0) {
             return res.status(403).send('You are already signed in from another device.');
         }
 
-        const [rows] = await connection.query('SELECT * FROM users WHERE email = ?', [email]);
+        const [rows] = await connection.query(
+            'SELECT * FROM users WHERE email = ?',
+            [email]
+        );
+
         if (rows.length === 0) {
             return res.status(401).send('Invalid email or password');
         }
@@ -144,6 +170,7 @@ app.post('/api/signin', async (req, res) => {
 
         const sessionCookie = req.session.id;
         const expiresAt = new Date(Date.now() + SESSION_COOKIE_MAX_AGE);
+
         await connection.query(
             'INSERT INTO sessions (email, cookie, expires_at) VALUES (?, ?, ?)',
             [email, sessionCookie, expiresAt]
@@ -156,12 +183,58 @@ app.post('/api/signin', async (req, res) => {
 
         res.redirect('/chat');
     } catch (err) {
-        res.status(500).send('Server error');
+        return res.status(500).send('Server error');
+    }
+});
+
+// Handle user details retrieval
+app.get('/api/user-details', ensureAuthenticated, async (req, res) => {
+    const sessionCookie = req.session.id;
+
+    if (!sessionCookie) {
+        return res.status(404).send('User session not found');
+    }
+
+    try {
+        const connection = await mysql.createConnection(dbConfig);
+
+        const [sessionRows] = await connection.query(
+            'SELECT email FROM sessions WHERE cookie = ? AND expires_at > NOW()',
+            [sessionCookie]
+        );
+
+        if (sessionRows.length === 0) {
+            await connection.end();
+            return res.status(404).send('Session expired or not found');
+        }
+
+        const email = sessionRows[0].email;
+
+        const [userRows] = await connection.query(
+            'SELECT first_name, last_name, email FROM users WHERE email = ?',
+            [email]
+        );
+
+        await connection.end();
+
+        if (userRows.length === 0) {
+            return res.status(404).send('User not found');
+        }
+
+        const user = userRows[0];
+        res.json({
+            firstName: user.first_name,
+            lastName: user.last_name,
+            email: user.email,
+        });
+    } catch (err) {
+        return res.status(500).send('Server error');
     }
 });
 
 // Handle Logout Process
 app.post('/api/logout', (req, res) => {
+
     const email = req.session.username;
 
     req.session.destroy(async (err) => {
@@ -171,14 +244,19 @@ app.post('/api/logout', (req, res) => {
 
         try {
             const connection = await mysql.createConnection(dbConfig);
-            await connection.query('DELETE FROM sessions WHERE email = ?', [email]);
+
+            await connection.query(
+                'DELETE FROM sessions WHERE email = ?',
+                [email]
+            );
+
             connection.end();
         } catch (err) {
             return res.status(500).send('Server error');
         }
 
         res.clearCookie('connect.sid');
-        res.redirect('/signin');
+        res.redirect('/signin?message=Logout Successfull');
     });
 });
 

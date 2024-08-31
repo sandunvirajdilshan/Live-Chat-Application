@@ -3,6 +3,7 @@ document.getElementById('signupBtn').addEventListener('click', async () => {
     const lastName = document.getElementById('lastName').value;
     const email = document.getElementById('email').value;
     const password = document.getElementById('password').value;
+    const confirmPassword = document.getElementById('confirmPassword').value;
 
     const response = await fetch('/api/signup', {
         method: 'POST',
@@ -13,7 +14,8 @@ document.getElementById('signupBtn').addEventListener('click', async () => {
             firstName,
             lastName,
             email,
-            password
+            password,
+            confirmPassword
         })
     });
 
@@ -28,4 +30,5 @@ document.getElementById('signupBtn').addEventListener('click', async () => {
     document.getElementById('lastName').value = '';
     document.getElementById('email').value = '';
     document.getElementById('password').value = '';
+    document.getElementById('confirmPassword').value = '';
 });

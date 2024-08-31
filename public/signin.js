@@ -1,11 +1,22 @@
-document.getElementById('signinBtn').addEventListener('click', async function() {
+window.onload = () => {
+    const urlParams = new URLSearchParams(window.location.search);
+    const message = urlParams.get('message');
+    if (message) {
+        const messageElement = document.getElementById('eMessage');
+        messageElement.textContent = message;
+    }
+
+    const inputs = document.querySelectorAll('#email, #password');
+    inputs.forEach(input => {
+        input.addEventListener('input', () => {
+            document.getElementById('eMessage').textContent = '';
+        });
+    });
+};
+
+document.getElementById('signinBtn').addEventListener('click', async () => {
     const email = document.getElementById('email').value;
     const password = document.getElementById('password').value;
-
-    if (!email || !password) {
-        alert('Please enter both email and password.');
-        return;
-    }
 
     const response = await fetch('/api/signin', {
         method: 'POST',
@@ -16,7 +27,6 @@ document.getElementById('signinBtn').addEventListener('click', async function() 
         body: JSON.stringify({
             email,
             password
-
         })
     });
 
