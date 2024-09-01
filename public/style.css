@@ -59,6 +59,11 @@ body {
     white-space: pre-wrap;
 }
 
+.message-name {
+    font-weight: bold;
+}
+
+
 #messages {
     flex-grow: 1;
     overflow-y: auto;
@@ -89,7 +94,7 @@ body {
     border-color: #007bff;
 }
 
-#sendBtn, #logoutBtn {
+#sendBtn, #logoutBtn, #deleteAccountBtn {
     color: #ffffff;
     border: none;
     border-radius: 10px;
@@ -105,7 +110,7 @@ body {
     margin-left: 10px;
 }
 
-#logoutBtn {
+#logoutBtn, #deleteAccountBtn {
     background-color: #f72e2e;
     margin: 10px;
 }
@@ -114,7 +119,7 @@ body {
     background-color: #0056b3;
 }
 
-#logoutBtn:hover {
+#logoutBtn:hover, #deleteAccountBtn:hover {
     background-color: #d11919;
 }
 
@@ -228,8 +233,7 @@ body {
 }
 
 .close {
-    color: #fff;
-    background-color: #f72e2e;
+    color: #3a3a3a;
     border: none;
     font-size: 24px;
     font-weight: bold;
@@ -243,7 +247,7 @@ body {
 }
 
 .close:hover {
-    background-color: #d11919;
+    color:#000000;
 }
 
 @keyframes fadeIn {

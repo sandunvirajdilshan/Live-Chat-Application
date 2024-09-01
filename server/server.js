@@ -232,6 +232,53 @@ app.get('/api/user-details', ensureAuthenticated, async (req, res) => {
     }
 });
 
+// Handle user account deletion
+app.delete('/api/delete-account', ensureAuthenticated, async (req, res) => {
+    const sessionCookie = req.session.id;
+
+    if (!sessionCookie) {
+        return res.status(404).send('User session not found');
+    }
+
+    try {
+        const connection = await mysql.createConnection(dbConfig);
+
+        const [sessionRows] = await connection.query(
+            'SELECT email FROM sessions WHERE cookie = ? AND expires_at > NOW()',
+            [sessionCookie]
+        );
+
+        if (sessionRows.length === 0) {
+            await connection.end();
+            return res.status(404).send('Session expired');
+        }
+
+        const email = sessionRows[0].email;
+
+        await connection.query(
+            'DELETE FROM sessions WHERE email = ?',
+            [email]
+        );
+
+        const [deleteUser] = await connection.query(
+            'DELETE FROM users WHERE email = ?',
+            [email]
+        );
+
+        if (deleteUser.affectedRows === 0) {
+            await connection.end();
+            return res.status(404).send('User not found or already deleted');
+        }
+
+        await connection.end();
+
+        res.clearCookie('connect.sid');
+        res.redirect('/signin?message=Account successfully deleted');
+    } catch (err) {
+        return res.status(500).send('Server error');
+    }
+});
+
 // Handle Logout Process
 app.post('/api/logout', (req, res) => {
 
@@ -260,15 +307,69 @@ app.post('/api/logout', (req, res) => {
     });
 });
 
+
+// Utility function to find the user's first name based on the session
+async function findFirstName(sessionId) {
+
+    try {
+        const connection = await mysql.createConnection(dbConfig);
+
+        const [sessionRows] = await connection.query(
+            'SELECT email FROM sessions WHERE cookie = ? AND expires_at > NOW()',
+            [sessionId]
+        );
+
+        if (sessionRows.length === 0) {
+            await connection.end();
+            return res.status(404).send('Session expired');
+        }
+
+        const email = sessionRows[0].email;
+
+        const [userRows] = await connection.query(
+            'SELECT first_name FROM users WHERE email = ?',
+            [email]
+        );
+
+        await connection.end();
+
+        if (userRows.length === 0) {
+            return res.status(404).send('User not found');
+        }
+
+        return userRows[0].first_name;
+
+    } catch (err) {
+        return res.status(500).send('Server error');
+    }
+}
+
 // WebSocket Handling
-wss.on('connection', (ws) => {
+wss.on('connection', async (ws, req) => {
+    const session = req.headers.cookie.split('connect.sid=')[1];
+    const cleanSession = session.replace('s%3A', '');
+    const sessionId = cleanSession.split('.')[0];
+
+    const firstName = await findFirstName(sessionId);
+
+    if (!firstName) {
+        ws.close();
+        return;
+    }
+
     clients.push(ws);
 
     ws.on('message', (message) => {
         const messageText = message.toString();
+
+        const messageData = JSON.stringify({
+            name: firstName,
+            text: messageText,
+        });
+
         clients.forEach((client) => {
             if (client.readyState === WebSocket.OPEN) {
-                client.send(messageText);
+                client.send(messageData);
             }
         });
     });
@@ -280,7 +381,7 @@ wss.on('connection', (ws) => {
 
 // Server Start
 server.listen(PORT, () => {
-    console.log(`Server is listening on http://localhost:${PORT}`);
+    console.log(`Server is listening on http://127.0.0.1:${PORT}`);
 });
 
 // Server Shutdown
