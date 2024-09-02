@@ -30,22 +30,30 @@ messageInput.addEventListener('keydown', (event) => {
     }
 });
 
+// Send message when user clicks send button or presses enter
+sendBtn.addEventListener('click', sendMessage);
+messageInput.addEventListener('keydown', (event) => {
+    if (event.key === 'Enter') {
+        sendMessage();
+    }
+});
+
 // Send Message function
 function sendMessage() {
     const message = messageInput.value;
     if (message) {
+        displayMessage('You', message, 'sentMessage');
+
         ws.send(message);
         messageInput.value = '';
         messageInput.focus();
     }
 }
 
-ws.onmessage = (event) => {
-    const data = JSON.parse(event.data);
-    const { name, text } = data;
-
+// Display message function
+function displayMessage(name, text, type) {
     const messageDiv = document.createElement('div');
-    messageDiv.classList.add('message');
+    messageDiv.classList.add('message', type);
 
     const nameDiv = document.createElement('div');
     nameDiv.classList.add('message-name');
@@ -59,8 +67,18 @@ ws.onmessage = (event) => {
 
     messagesDiv.appendChild(messageDiv);
     messagesDiv.scrollTop = messagesDiv.scrollHeight;
+}
+
+// WebSocket on receiving message
+ws.onmessage = (event) => {
+    const data = JSON.parse(event.data);
+    const { name, text } = data;
+
+    // Show received message on the left
+    displayMessage(name, text, 'receivedMessage');
 };
 
+// WebSocket on close connection
 ws.onclose = () => {
     const messageDiv = document.createElement('div');
     messageDiv.textContent = 'Connection closed.';

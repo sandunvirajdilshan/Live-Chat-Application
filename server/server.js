@@ -344,7 +344,6 @@ async function findFirstName(sessionId) {
     }
 }
 
-// WebSocket Handling
 wss.on('connection', async (ws, req) => {
     const session = req.headers.cookie.split('connect.sid=')[1];
     const cleanSession = session.replace('s%3A', '');
@@ -368,7 +367,7 @@ wss.on('connection', async (ws, req) => {
         });
 
         clients.forEach((client) => {
-            if (client.readyState === WebSocket.OPEN) {
+            if (client !== ws && client.readyState === WebSocket.OPEN) {
                 client.send(messageData);
             }
         });
@@ -381,7 +380,7 @@ wss.on('connection', async (ws, req) => {
 
 // Server Start
 server.listen(PORT, () => {
-    console.log(`Server is listening on http://127.0.0.1:${PORT}`);
+    console.log(`Server is listening on http://0.0.0.0:${PORT}`);
 });
 
 // Server Shutdown

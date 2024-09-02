@@ -3,7 +3,6 @@ body {
     background-color: #f4f4f9;
     margin: 0;
     padding: 0;
-    height: 100vh;
     display: flex;
     justify-content: center;
     align-items: center;
@@ -18,6 +17,7 @@ body {
     background-color: #ffffff;
     border-radius: 15px;
     box-shadow: 0 8px 16px rgba(0, 0, 0, 0.2);
+    margin: 10px;
 }
 
 .header {
@@ -38,16 +38,6 @@ body {
     padding: 10px;
 }
 
-.eMessage {
-    text-align: center;
-    margin-top: 20px;
-    color: green;
-    position: relative;
-    top: 10px;
-    font-size:25px;
-}
-
-
 .message {
     padding: 10px;
     margin: 5px 0;
@@ -59,10 +49,21 @@ body {
     white-space: pre-wrap;
 }
 
+.sentMessage {
+    background-color: #d1ffd6;
+    align-self: flex-end;
+    text-align: right;
+}
+
+.receivedMessage {
+    background-color: #f1f1f1;
+    align-self: flex-start;
+    text-align: left;
+}
+
 .message-name {
     font-weight: bold;
 }
-
 
 #messages {
     flex-grow: 1;
@@ -71,6 +72,7 @@ body {
     display: flex;
     flex-direction: column;
     align-items: flex-start;
+    justify-content: flex-end;
 }
 
 .chat-input {
@@ -169,6 +171,15 @@ body {
 
 .form-container a:hover {
     color: #0056b3;
+}
+
+.eMessage {
+    text-align: center;
+    margin-top: 20px;
+    color: green;
+    position: relative;
+    top: 10px;
+    font-size:25px;
 }
 
 
