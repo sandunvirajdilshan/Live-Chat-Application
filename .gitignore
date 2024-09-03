@@ -1,5 +1,5 @@
 node_modules/
-
+chat_app.sql
 fs.txt
 .env
 .gitignore

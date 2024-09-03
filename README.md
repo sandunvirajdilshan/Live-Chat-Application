@@ -12,6 +12,7 @@ This project demonstrates a simple chat application using WebSockets. It allows 
 
 - **Server**: Node.js with `express` and `ws` (WebSocket library)
 - **Client**: HTML, CSS, JavaScript
+- **Database**: MySQL
 
 ## Setup and Installation
 

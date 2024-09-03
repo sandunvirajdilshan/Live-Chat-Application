@@ -1,5 +1,5 @@
 {
-  "name": "broadcast-server",
+  "name": "Live Chat Application",
   "version": "1.0.0",
   "description": "",
   "main": "server/server.js",
