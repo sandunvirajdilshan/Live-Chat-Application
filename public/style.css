@@ -75,6 +75,25 @@ body {
     justify-content: flex-end;
 }
 
+.message.system {
+    justify-content:center;
+    align-items:center;
+    text-align: center;
+    color: red;
+    background: none;
+    font-weight: bold;
+    margin-top: 10px;
+    margin-bottom: 10px;
+}
+
+.chat-box {
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-end;
+    height: 100%;
+    padding-bottom: 10px;
+}
+
 .chat-input {
     border-radius: 0 0 15px 15px;
     display: flex;

@@ -73,13 +73,11 @@ function displayMessage(name, text, type) {
     messagesDiv.scrollTop = messagesDiv.scrollHeight;
 }
 
-
 ws.onmessage = (event) => {
     const data = JSON.parse(event.data);
     const { name, text } = data;
     displayMessage(name, text, 'receivedMessage');
 };
-
 
 ws.onclose = () => {
     const messageDiv = document.createElement('div');
