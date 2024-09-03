@@ -31,10 +31,8 @@ const dbConfig = {
     database: process.env.DB_NAME
 };
 
-// Middleware
 app.use(express.static(path.join(__dirname, '../public')));
 
-// Session middleware
 app.use(session({
     secret: SESSION_SECRET,
     resave: false,
@@ -42,7 +40,6 @@ app.use(session({
     cookie: { secure: false, maxAge: SESSION_COOKIE_MAX_AGE }
 }));
 
-// Body parser middleware
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true }));
 
@@ -86,8 +83,8 @@ app.get('/404', (req, res) => {
     res.sendFile(path.join(__dirname, '../views', '404.html'));
 });
 
-// Block access to .html files directly
-app.get('/*.html', (req, res) => {
+// Block access to .html and .js files
+app.get(/.*\.(html|js)$/, (req, res) => {
     res.redirect('/404');
 });
 
@@ -127,6 +124,7 @@ app.post('/api/signup', async (req, res) => {
 
         res.redirect('/signin?message=Account created successfully');
     } catch (err) {
+        console.log(err);
         return res.status(500).send('Server error');
     }
 });
@@ -183,6 +181,7 @@ app.post('/api/signin', async (req, res) => {
 
         res.redirect('/chat');
     } catch (err) {
+        console.log(err);
         return res.status(500).send('Server error');
     }
 });
@@ -228,6 +227,150 @@ app.get('/api/user-details', ensureAuthenticated, async (req, res) => {
             email: user.email,
         });
     } catch (err) {
+        console.log(err);
+        return res.status(500).send('Server error');
+    }
+});
+
+// Handle user details update
+app.put('/api/update-user-details', ensureAuthenticated, async (req, res) => {
+    const sessionCookie = req.session.id;
+
+    if (!sessionCookie) {
+        return res.status(404).send('User session not found');
+    }
+
+    const { field, value } = req.body;
+
+    if (!field || !value) {
+        return res.status(400).send('Fields cannot be empty');
+    }
+
+    try {
+        const connection = await mysql.createConnection(dbConfig);
+
+        const [sessionRows] = await connection.query(
+            'SELECT email FROM sessions WHERE cookie = ? AND expires_at > NOW()',
+            [sessionCookie]
+        );
+
+        if (sessionRows.length === 0) {
+            await connection.end();
+            return res.status(404).send('Session expired or not found');
+        }
+
+        const currentEmail = sessionRows[0].email;
+
+        const updateFields = [];
+        const queryParams = [];
+
+        switch (field) {
+            case 'firstName':
+                updateFields.push('first_name = ?');
+                queryParams.push(value);
+                break;
+            case 'lastName':
+                updateFields.push('last_name = ?');
+                queryParams.push(value);
+                break;
+            default:
+                await connection.end();
+                return res.status(400).send('Invalid field');
+        }
+
+        if (updateFields.length === 0) {
+            await connection.end();
+            return res.status(400).send('No valid fields to update');
+        }
+
+        queryParams.push(currentEmail);
+
+        if (field === 'email') {
+            return res.status(400).send('Cannot Update Email');
+        }
+
+        const sqlUpdate = `UPDATE users SET ${updateFields.join(', ')} WHERE email = ?`;
+
+        const [updateResult] = await connection.query(sqlUpdate, queryParams);
+
+        if (updateResult.affectedRows === 0) {
+            await connection.end();
+            return res.status(404).send('User not found');
+        }
+
+        await connection.end();
+
+        res.status(200).send('User details updated successfully');
+    } catch (err) {
+        console.error(err);
+        return res.status(500).send('Server error');
+    }
+});
+
+// Handle Change Password Process
+app.post('/api/change-password', async (req, res) => {
+
+    const sessionCookie = req.session.id;
+
+    if (!sessionCookie) {
+        return res.status(404).send('User session not found');
+    }
+
+    const { currentPassword, newPassword, confirmNewPassword } = req.body;
+
+
+    if (!currentPassword || !newPassword || !confirmNewPassword) {
+        return res.status(400).send('All fields are required');
+    }
+
+    if (newPassword !== confirmNewPassword) {
+        return res.status(400).send('New passwords do not match');
+    }
+
+    try {
+        const connection = await mysql.createConnection(dbConfig);
+
+        const [sessionRows] = await connection.query(
+            'SELECT email FROM sessions WHERE cookie = ? AND expires_at > NOW()',
+            [sessionCookie]
+        );
+
+        if (sessionRows.length === 0) {
+            await connection.end();
+            return res.status(404).send('Session expired or not found');
+        }
+
+        const currentEmail = sessionRows[0].email;
+
+        const [rows] = await connection.query(
+            'SELECT password_hash FROM users WHERE email = ?',
+            [currentEmail]
+        );
+
+        if (rows.length === 0) {
+            return res.status(404).send('User not found');
+        }
+
+        const { password_hash } = rows[0];
+
+        const isMatch = await bcrypt.compare(currentPassword, password_hash);
+
+        if (!isMatch) {
+            return res.status(400).send('Current password is incorrect');
+        }
+
+        const hashedNewPassword = await bcrypt.hash(newPassword, SALT_ROUNDS);
+
+        await connection.query(
+            'UPDATE users SET password_hash = ? WHERE email = ?',
+            [hashedNewPassword, currentEmail]
+        );
+
+        connection.end();
+
+        res.status(200).send('Password changed successfully');
+    } catch (err) {
+        console.log(err);
         return res.status(500).send('Server error');
     }
 });
@@ -275,6 +418,7 @@ app.delete('/api/delete-account', ensureAuthenticated, async (req, res) => {
         res.clearCookie('connect.sid');
         res.redirect('/signin?message=Account successfully deleted');
     } catch (err) {
+        console.log(err);
         return res.status(500).send('Server error');
     }
 });
@@ -299,6 +443,7 @@ app.post('/api/logout', (req, res) => {
 
             connection.end();
         } catch (err) {
+            console.log(err);
             return res.status(500).send('Server error');
         }
 
@@ -340,6 +485,7 @@ async function findFirstName(sessionId) {
         return userRows[0].first_name;
 
     } catch (err) {
+        console.log(err);
         return res.status(500).send('Server error');
     }
 }
@@ -374,6 +520,17 @@ wss.on('connection', async (ws, req) => {
     });
 
     ws.on('close', () => {
+        const messageData = JSON.stringify({
+            type: 'system',
+            text: 'Connection closed.',
+        });
+
+        clients.forEach((client) => {
+            if (client.readyState === WebSocket.OPEN) {
+                client.send(messageData);
+            }
+        });
+
         clients = clients.filter((client) => client !== ws);
     });
 });
@@ -385,7 +542,7 @@ server.listen(PORT, () => {
 
 // Server Shutdown
 process.on('SIGINT', async () => {
-    console.log('Shutting down server...');
+    console.log('\nShutting down server...');
 
     clients.forEach(client => client.close());
 

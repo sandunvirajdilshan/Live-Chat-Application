@@ -31,15 +31,45 @@
             <h3>User Details</h3>
             <div id="userDetailsContent">
                 <div class="user-details">
-                    <p>First Name:</p>
-                    <p></p>
-                    <p>Last Name:</p>
-                    <p></p>
-                    <p>Email:</p>
-                    <p></p>
+                    <label for="firstName" class="user-lable">First Name:</label>
+                    <div class="editable-input">
+                        <input type="text" id="firstName" class="user-input" readonly />
+                        <button class="edit-btn" data-field="firstName">Edit</button>
+                    </div>
+
+                    <label for="lastName" class="user-lable">Last Name:</label>
+                    <div class="editable-input">
+                        <input type="text" id="lastName" class="user-input" readonly />
+                        <button class="edit-btn" data-field="lastName">Edit</button>
+                    </div>
+
+                    <label for="email" class="user-lable">Email:</label>
+                    <div class="editable-input">
+                        <input type="email" id="email" class="user-input" readonly />
+                    </div>
+
+                    <h4>Change Password</h4><br>
+
+                    <label for="currentPassword" class="passwd-lable">Current Password:</label>
+                    <div class="editable-input">
+                        <input type="password" id="currentPassword" class="passwd-input" />
+                    </div>
+
+                    <label for="newPassword" class="passwd-lable">New Password:</label>
+                    <div class="editable-input">
+                        <input type="password" id="newPassword" class="passwd-input" />
+                    </div>
+
+                    <label for="confirmNewPassword" class="passwd-lable">Confirm New Password:</label>
+                    <div class="editable-input">
+                        <input type="password" id="confirmNewPassword" class="passwd-input" />
+                    </div>
+                </div>
             </div>
+            <div class="modal-buttons">
+                <button id="deleteAccountBtn" class="delete-btn">Delete Account</button>
+                <button id="changePasswordBtn" class="submit-btn">Change Password</button>
             </div>
-            <button id="deleteAccountBtn" class="delete-btn">Delete Account</button>
         </div>
     </div>
 

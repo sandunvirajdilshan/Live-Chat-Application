@@ -11,16 +11,20 @@ const userDetailsModal = document.getElementById('userDetailsModal');
 const userDetailsContent = document.getElementById('userDetailsContent');
 const closeBtn = document.querySelector('.close');
 const deleteAccountBtn = document.getElementById('deleteAccountBtn');
+const changePasswordBtn = document.getElementById('changePasswordBtn');
 
 messageInput.focus();
 
 document.addEventListener('click', (event) => {
-    const ignoreFocusElements = ['userDetailsBtn', 'logoutBtn', 'sendBtn', 'userDetailsModal', 'close', 'deleteAccountBtn'];
+    const ignoreFocusElements = ['userDetailsBtn', 'logoutBtn', 'sendBtn', 'userDetailsModal', 'close', 'deleteAccountBtn', 'changePasswordBtn'];
+
+    if (document.activeElement && document.activeElement.tagName === 'INPUT' && !document.activeElement.readOnly) {
+        return;
+    }
 
     if (!ignoreFocusElements.some(id => event.target.id === id || event.target.closest(`#${id}`))) {
         messageInput.focus();
     }
-    messageInput.focus();
 });
 
 sendBtn.addEventListener('click', sendMessage);
@@ -30,7 +34,7 @@ messageInput.addEventListener('keydown', (event) => {
     }
 });
 
-// Send message when user clicks send button or presses enter
+
 sendBtn.addEventListener('click', sendMessage);
 messageInput.addEventListener('keydown', (event) => {
     if (event.key === 'Enter') {
@@ -38,7 +42,7 @@ messageInput.addEventListener('keydown', (event) => {
     }
 });
 
-// Send Message function
+
 function sendMessage() {
     const message = messageInput.value;
     if (message) {
@@ -50,7 +54,7 @@ function sendMessage() {
     }
 }
 
-// Display message function
+
 function displayMessage(name, text, type) {
     const messageDiv = document.createElement('div');
     messageDiv.classList.add('message', type);
@@ -69,24 +73,25 @@ function displayMessage(name, text, type) {
     messagesDiv.scrollTop = messagesDiv.scrollHeight;
 }
 
-// WebSocket on receiving message
+
 ws.onmessage = (event) => {
     const data = JSON.parse(event.data);
     const { name, text } = data;
-
-    // Show received message on the left
     displayMessage(name, text, 'receivedMessage');
 };
 
-// WebSocket on close connection
+
 ws.onclose = () => {
     const messageDiv = document.createElement('div');
     messageDiv.textContent = 'Connection closed.';
     messageDiv.classList.add('message', 'system');
     messagesDiv.appendChild(messageDiv);
+
+    document.getElementById('messageInput').disabled = true;
+    document.getElementById('sendBtn').disabled = true;
 };
 
-// User Details
+
 userDetailsBtn.addEventListener('click', async () => {
     const response = await fetch('/api/user-details', {
         method: 'GET',
@@ -96,11 +101,9 @@ userDetailsBtn.addEventListener('click', async () => {
     if (response.ok) {
         const userDetails = await response.json();
 
-        const userDetailsContent = document.getElementById('userDetailsContent');
-        const userDetailFields = userDetailsContent.querySelectorAll('p:nth-child(2n)');
-        userDetailFields[0].textContent = userDetails.firstName || 'N/A';
-        userDetailFields[1].textContent = userDetails.lastName || 'N/A';
-        userDetailFields[2].textContent = userDetails.email || 'N/A';
+        document.getElementById('firstName').value = userDetails.firstName || 'N/A';
+        document.getElementById('lastName').value = userDetails.lastName || 'N/A';
+        document.getElementById('email').value = userDetails.email || 'N/A';
 
         userDetailsModal.style.display = 'grid';
     } else {
@@ -119,17 +122,100 @@ window.addEventListener('click', (event) => {
     }
 });
 
-// Delete Account
+
+document.querySelectorAll('.edit-btn').forEach(btn => {
+    btn.addEventListener('click', (event) => {
+        const fieldId = event.target.getAttribute('data-field');
+        const inputField = document.getElementById(fieldId);
+
+        if (inputField.readOnly) {
+            inputField.readOnly = false;
+            inputField.classList.add('editable');
+            event.target.textContent = 'Save';
+        } else {
+            inputField.readOnly = true;
+            inputField.classList.remove('editable');
+            event.target.textContent = 'Edit';
+
+            const updatedValue = inputField.value;
+            updateUserDetails(fieldId, updatedValue);
+        }
+    });
+});
+
+
+async function updateUserDetails(field, value) {
+    const data = {
+        field: field,
+        value: value
+    };
+
+    console.log(data);
+
+    const response = await fetch('/api/update-user-details', {
+        method: 'PUT',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(data),
+        credentials: 'same-origin',
+    });
+
+    if (response.ok) {
+        const message = await response.text();
+        alert(message);
+    } else {
+        const errorMessage = await response.text();
+        alert(errorMessage);
+    }
+}
+
+
+changePasswordBtn.addEventListener('click', async () => {
+    const currentPassword = document.getElementById('currentPassword').value;
+    const newPassword = document.getElementById('newPassword').value;
+    const confirmNewPassword = document.getElementById('confirmNewPassword').value;
+
+    if (newPassword !== confirmNewPassword) {
+        alert('New passwords do not match');
+        return;
+    }
+
+    const response = await fetch('/api/change-password', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+            currentPassword: currentPassword,
+            newPassword: newPassword,
+            confirmNewPassword: confirmNewPassword
+        }),
+        credentials: 'same-origin',
+    });
+
+    if (response.ok) {
+        document.getElementById('currentPassword').value = '';
+        document.getElementById('newPassword').value = '';
+        document.getElementById('confirmNewPassword').value = '';
+        const message = await response.text();
+        alert(message)
+    } else {
+        const errorMessage = await response.text();
+        alert(errorMessage);
+    }
+});
+
+
 deleteAccountBtn.addEventListener('click', async () => {
-    const confirmDelete = confirm('Are you sure you want to delete your account? This action cannot be undone.');
-    if (confirmDelete) {
+    if (confirm('Are you sure you want to delete your account? This action cannot be undone.')) {
         const response = await fetch('/api/delete-account', {
             method: 'DELETE',
             credentials: 'same-origin',
         });
 
-        if (response.redirected) {
-            window.location.href = response.url;
+        if (response.ok) {
+            window.location.href = '/logout';
         } else {
             const errorMessage = await response.text();
             alert(errorMessage);
@@ -137,7 +223,7 @@ deleteAccountBtn.addEventListener('click', async () => {
     }
 });
 
-// Logout
+
 logoutBtn.addEventListener('click', async () => {
     const response = await fetch('/api/logout', {
         method: 'POST',
