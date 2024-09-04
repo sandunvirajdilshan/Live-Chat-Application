@@ -1,5 +1,11 @@
+# npm dependencies
 node_modules/
+
+# database backup file
 chat_app.sql
+
+# folder structure text file
 fs.txt
+
+# environment variables file
 .env
-.gitignore
